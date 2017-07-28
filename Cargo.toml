@@ -1,0 +1,8 @@
+[package]
+authors = ["CrazyMerlyn <crazy.d.merlyn@gmail.com>"]
+name = "gitlet"
+version = "0.1.0"
+
+[dependencies]
+clap = "2.25.1"
+error-chain = "0.10.0"
