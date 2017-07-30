@@ -1,35 +1,41 @@
 use std::path::Path;
 use std;
+use std::collections::HashMap;
 use std::io::Write;
 
 use errors::Result;
 
 pub enum Contents {
     File(String),
-    Folder(Vec<Entry>),
+    Folder(Entries),
 }
 
-pub struct Entry {
-    pub name: String,
-    pub contents: Contents,
-}
+pub type Entries = HashMap<String, Contents>;
 
-impl Entry {
-    pub fn write<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        match self.contents {
-            Contents::File(ref text) => {
-                let path = path.as_ref().join(&self.name);
+pub fn write_tree<P: AsRef<Path>>(entries: Entries, path: P) -> Result<()> {
+    for (name, contents) in entries.into_iter() {
+        match contents {
+            Contents::File(text) => {
+                let path = path.as_ref().join(name);
                 let mut file = std::fs::File::create(path)?;
                 file.write_all(text.as_bytes())?;
             }
-            Contents::Folder(ref elements) => {
-                let path = path.as_ref().join(&self.name);
+            Contents::Folder(elements) => {
+                let path = path.as_ref().join(name);
                 std::fs::create_dir(&path)?;
-                for elem in elements {
-                    elem.write(&path)?;
-                }
+                write_tree(elements, &path)?;
             }
         }
-        Ok(())
     }
+    Ok(())
 }
+
+#[macro_export]
+macro_rules! files {
+    ($($name:expr => $contents:expr),*) => {{
+        let mut entries = Entries::new();
+        $(entries.insert($name, $contents);)*
+        entries
+    }}
+}
+
